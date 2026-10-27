@@ -24,7 +24,7 @@ const Providers = ({ children }: PropsWithChildren) => {
 
       <ToastContainer />
 
-      <ReactQueryDevtools buttonPosition="bottom-left" />
+      <ReactQueryDevtools />
     </QueryClientProvider>
   );
 };

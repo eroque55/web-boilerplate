@@ -140,6 +140,9 @@ API 401 ──► interceptor ──► refresh (uma chamada, as demais aguardam
 ## Rotas e páginas
 
 - `src/app/(auth)/` — área logada; o `layout.tsx` do grupo renderiza o `AppHeader`.
+- **Cada `page.tsx` da área logada envolve a feature em `<ClientOnly>`.** Os dados vêm do React Query no cliente e o Next hidrata o layout antes da página: se o header já tiver buscado a mesma query (ex.: `useMe`), a página hidrataria com dados que o HTML do servidor não tinha (hydration mismatch). Com o `ClientOnly`, a página só monta depois da hidratação.
+- O `ClientOnly` fica **na página, nunca no layout**: no layout ele tira o segmento da página do HTML do servidor e a validação de navegação instantânea do Next 16.4 passa a acusar "dropped from rendering" em toda página.
+- Se uma página precisar de SSR de verdade, busque os dados no servidor (prefetch + `HydrationBoundary`) e dispense o `ClientOnly`.
 - `src/app/login/` — rota pública.
 - `app/**/page.tsx` é um **Server Component fino**: exporta `metadata` e renderiza o componente da feature (`components/pages/[Feature]`), que é Client Component quando usa hooks.
 - **Cache Components + Partial Prefetching** (`cacheComponents` e `partialPrefetching: true`, o recomendado pelo Next 16.4 para projetos novos) estão ligados: os links pré-carregam um App Shell estático por rota. O padrão do projeto continua sendo buscar dados no cliente com React Query; se for buscar dados em Server Components, use `'use cache'` ou envolva em `<Suspense>` — leia `node_modules/next/dist/docs/01-app/01-getting-started/` (Caching) antes.

@@ -254,6 +254,7 @@ Nunca adicione CSS de componente ao `global.css`.
 // src/app/(auth)/notes/page.tsx
 import type { Metadata } from 'next';
 
+import ClientOnly from '@/components/layout/ClientOnly';
 import Notes from '@/components/pages/Notes';
 
 export const metadata: Metadata = {
@@ -261,13 +262,18 @@ export const metadata: Metadata = {
 };
 
 const NotesPage = () => {
-  return <Notes />;
+  return (
+    <ClientOnly>
+      <Notes />
+    </ClientOnly>
+  );
 };
 
 export default NotesPage;
 ```
 
-- Rotas da área logada ficam no grupo `src/app/(auth)/`. Rotas públicas precisam entrar em `PUBLIC_ROUTES` (`src/constants/routes.ts`), senão o `proxy.ts` redireciona para o login.
+- Rotas da área logada ficam no grupo `src/app/(auth)/` e **sempre** envolvem a feature em `<ClientOnly>` (na página, nunca no layout — o porquê está em `architecture.md`, "Rotas e páginas"). Páginas públicas sem dados do React Query (como o login) dispensam.
+- Rotas públicas precisam entrar em `PUBLIC_ROUTES` (`src/constants/routes.ts`), senão o `proxy.ts` redireciona para o login.
 - Páginas com params usam o helper global `PageProps<'/rota/[id]'>` gerado pelo Next (`params` é uma `Promise`).
 
 ---
