@@ -1,0 +1,12 @@
+@keyframes shimmer-slide {
+  0% {
+    transform: translateX(-500%);
+  }
+  100% {
+    transform: translateX(500%);
+  }
+}
+
+.shimmer {
+  animation: shimmer-slide 3s linear infinite;
+}

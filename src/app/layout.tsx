@@ -1,25 +1,29 @@
-import './globals.css';
+import '@/styles/global.css';
 
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { PropsWithChildren } from 'react';
 
-import Providers from '@/components/pages/Providers';
+import Providers from '@/components/layout/Providers';
+import { APP_DESCRIPTION, APP_NAME } from '@/constants/app';
 
 const inter = Inter({
-  variable: '--font-inter',
   subsets: ['latin'],
-  weight: ['400', '500', '600'],
+  variable: '--font-inter',
 });
 
 export const metadata: Metadata = {
-  title: 'changethisname',
+  title: {
+    default: APP_NAME,
+    template: `%s | ${APP_NAME}`,
+  },
+  description: APP_DESCRIPTION,
 };
 
-const RootLayout = ({ children }: PropsWithChildren) => {
+const RootLayout = ({ children }: Readonly<PropsWithChildren>) => {
   return (
-    <html lang="pt-BR">
-      <body className={`${inter.variable} antialiased`}>
+    <html className={inter.variable} lang="pt-BR">
+      <body className="bg-bg antialiased">
         <Providers>{children}</Providers>
       </body>
     </html>

@@ -1,0 +1,77 @@
+@import 'tailwindcss';
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    translate: 0 6px;
+  }
+  to {
+    opacity: 1;
+    translate: none;
+  }
+}
+
+/* `inline` porque a variável vem do next/font (definida no <html>). O fallback
+   cobre o global-error.tsx, que renderiza fora do layout raiz. */
+@theme inline {
+  --font-sans:
+    var(--font-inter, ui-sans-serif), ui-sans-serif, system-ui, sans-serif;
+}
+
+/* `static` emite as variáveis mesmo sem nenhuma classe usando: o theme.ts as
+   referencia via var() para props que pedem string de cor. */
+@theme static {
+  --color-primary: #1654a2;
+  --color-primary-deep: #0f3e7a;
+  --color-primary-soft: #eaf1fb;
+  --color-primary-soft2: #d4e2f5;
+  --color-ink: #1a1a1a;
+  --color-ink2: #2c2c2a;
+  --color-bg: #f8f9fb;
+  --color-green: #2f7d32;
+  --color-green-soft: #e8f3e8;
+  --color-blue: #2864a8;
+  --color-blue-soft: #eaf2fb;
+  --color-red: #c53030;
+  --color-red-soft: #ffe3e3;
+  --color-yellow: #c77700;
+  --color-yellow-soft: #fff4dc;
+
+  --shadow-primary:
+    0 6px 20px rgb(22 84 162 / 0.18), 0 2px 4px rgb(22 84 162 / 0.12);
+
+  --animate-fade-in: fade-in 0.4s ease both;
+}
+
+@layer base {
+  body {
+    color: var(--color-ink);
+  }
+
+  button {
+    cursor: pointer;
+  }
+
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-gray-300) transparent;
+  }
+
+  ::-webkit-scrollbar {
+    width: 5px;
+    height: 5px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: var(--color-gray-300);
+    border-radius: 9999px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--color-gray-400);
+  }
+}

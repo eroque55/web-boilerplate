@@ -1,17 +1,16 @@
 export const queryKeys = {
-  base: {
-    all: ['bases'] as const,
-    lists: () => [...queryKeys.base.all, 'list'] as const,
+  user: {
+    all: () => ['user'] as const,
+    me: () => ['user', 'me'] as const,
   },
-} as const;
+};
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, no-unused-vars
-type ExtractQueryKey<T> = T extends (...args: any[]) => infer R ? R : T;
+type TQueryKeyFactory = typeof queryKeys;
+
+type TKeyOf<T> = T extends (...args: never[]) => infer TKey ? TKey : never;
 
 export type TQueryKey = {
-  [K in keyof typeof queryKeys]: {
-    [P in keyof (typeof queryKeys)[K]]: ExtractQueryKey<
-      (typeof queryKeys)[K][P]
-    >;
-  }[keyof (typeof queryKeys)[K]];
-}[keyof typeof queryKeys];
+  [Domain in keyof TQueryKeyFactory]: TKeyOf<
+    TQueryKeyFactory[Domain][keyof TQueryKeyFactory[Domain]]
+  >;
+}[keyof TQueryKeyFactory];

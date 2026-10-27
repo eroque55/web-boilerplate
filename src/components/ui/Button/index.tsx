@@ -1,80 +1,88 @@
-'use client';
-
 import { ButtonHTMLAttributes, MouseEvent } from 'react';
 
-import { useDisableDelay } from '@/hooks/common';
-import colors from '@/theme/colors';
+import Icon, { TIconProps } from '@/components/ui/Icon';
+import Spinner from '@/components/ui/Spinner';
+import { useDisableDelay } from '@/hooks/useDisableDelay';
+import { cn } from '@/utils/cn';
 
-import Icon, { IconProps } from '../Icon';
-import Loader from '../Loader';
+import { BUTTON_MAP, TButtonColor } from './constants';
 
 type Props = {
-  color?: string;
-  text?: string;
-  wired?: boolean;
-  leftIcon?: IconProps;
-  isLoading?: boolean;
+  text: string;
+  color?: TButtonColor;
+  textColor?: string;
+  textClassName?: string;
+  leftIcon?: TIconProps;
+  rightIcon?: TIconProps;
+  lift?: boolean;
+  showHover?: boolean;
   withoutDelay?: boolean;
-  width?: number | string;
-} & ButtonHTMLAttributes<HTMLButtonElement>;
+  isLoading?: boolean;
+  showLoadingIndicator?: boolean;
+  onClick?: (e: MouseEvent<HTMLButtonElement>) => void | Promise<void>;
+} & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'color' | 'onClick'>;
 
 const Button = ({
   text,
-  wired = false,
-  color = colors.primary[100],
+  color = 'primary',
+  textColor,
+  textClassName = 'text-sm font-medium',
   leftIcon,
-  isLoading = false,
+  rightIcon,
+  lift = false,
+  showHover = true,
   withoutDelay = false,
-  onClick,
-  width = 'fit-content',
+  isLoading = false,
+  showLoadingIndicator = false,
+  className,
   type = 'button',
   disabled,
+  onClick,
   ...props
 }: Props) => {
-  const { executeWithDelay, isLoading: loading } = useDisableDelay();
+  const { executeWithDelay, isLoading: isDelaying } = useDisableDelay();
 
-  const handleTextColor = () => {
-    if (wired) {
-      return color;
-    }
-    return colors.white;
-  };
+  const variant = BUTTON_MAP[color];
+  const isBusy = isLoading || isDelaying;
+  const showSpinner = isBusy && showLoadingIndicator;
+
+  const renderIcon = (icon: TIconProps) => <Icon size={16} {...icon} />;
 
   const handleClick = async (e: MouseEvent<HTMLButtonElement>) => {
-    if (onClick && withoutDelay) {
+    if (!onClick) {
+      return;
+    }
+
+    if (withoutDelay) {
       await onClick(e);
       return;
     }
-    if (onClick) {
-      await executeWithDelay(() => onClick(e));
-      return;
-    }
+
+    await executeWithDelay(() => onClick(e));
   };
 
   return (
     <button
-      className={`relative flex items-center justify-center gap-3 overflow-hidden rounded-lg border-2 p-2 ${loading || isLoading ? '' : 'hover:opacity-85'}`}
-      disabled={disabled || isLoading || loading}
-      style={{
-        backgroundColor: wired ? 'transparent' : color,
-        borderColor: wired ? color : 'transparent',
-        color: handleTextColor(),
-        width,
-        cursor: disabled || isLoading || loading ? 'default' : 'pointer',
-      }}
+      className={cn(
+        'flex items-center justify-center gap-2 rounded-xl px-4 py-3 transition disabled:cursor-default',
+        disabled
+          ? 'bg-gray-200 text-gray-400'
+          : [variant.bg, textColor ?? variant.text],
+        !disabled && showHover && variant.hover,
+        !disabled && lift && 'hover:-translate-y-0.5 hover:shadow-primary',
+        isBusy && 'opacity-75',
+        className,
+      )}
+      disabled={disabled || isBusy}
       type={type}
       onClick={handleClick}
       {...props}
     >
-      {leftIcon && <Icon color={handleTextColor()} {...leftIcon} />}
+      {showSpinner ? <Spinner size={16} /> : leftIcon && renderIcon(leftIcon)}
 
-      <span className="text-lg font-semibold">{text}</span>
+      <span className={textClassName}>{text}</span>
 
-      {(isLoading || loading) && (
-        <div className="absolute inset-0 flex items-center justify-center bg-black/20">
-          <Loader color={handleTextColor()} />
-        </div>
-      )}
+      {rightIcon && renderIcon(rightIcon)}
     </button>
   );
 };
