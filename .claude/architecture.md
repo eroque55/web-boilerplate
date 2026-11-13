@@ -1,176 +1,153 @@
-# Arquitetura do Projeto
+# Architecture
 
-> **Papel deste doc:** visão e _porquê_ da arquitetura. Para as _regras de código_ concretas (como nomear, estruturar, validar), veja `coding_standards.md`; para _valores de design_, `design_tokens.md`.
-
-O projeto segue o padrão **Golden Standard**: camadas com uma responsabilidade cada, componentes pequenos e estilização sem runtime. Ele nasceu da migração do `estuda-web-aluno`, onde substituiu componentes de 400+ linhas com `styled-components`, `useState` em cascata e `useQuery` direto no componente.
-
----
-
-## Camadas
+## Folder map
 
 ```
-API Services → API Hooks → Zustand Store → Components
+assets/
+  icons/              SVG icons + typed registry (index.ts)
+src/
+  app/                Routes. Next.js App Router, file-based.
+    page.tsx          Root route. Dispatcher only — see conventions.
+    layout.tsx        Root HTML shell, zero-FOUC theme script, Providers
+    error.tsx         Segment error boundary ({ error, retry })
+    global-error.tsx  Root error boundary ({ error, retry })
+    not-found.tsx     404 route
+    (auth)/           Unauthenticated routes (/login)
+    (main)/           Authenticated shell + routes (/home)
+  components/
+    ui/               Generic pieces. Consumed by more than one screen.
+    layout/           App chrome (AppHeader, ClientOnly, Providers).
+    screens/          Mirror of app/. Single-screen components.
+  constants/          App metadata, routes, storage keys, typed query keys.
+  contexts/           React contexts (AuthContext)
+  hooks/
+    api/              Server calls. One hook file per domain.
+    common/           Reusable hooks, exported through index.ts
+  services/
+    api/              Raw API functions. No React.
+    http.ts           Axios instance + auth header + deduplicated 401 refresh
+    queryClient.ts    SSR-safe QueryClient factory + global MutationCache
+  store/              Zustand stores
+  test/               Test helpers. Never imported by app code.
+  theme/              colors.ts (source of truth) + global.css
+  types/              Domain and API types (TUser, TApiError)
+  utils/              Pure helpers + cookie/session utilities. No React.
+  validation/         Zod config (zod.ts) + form schemas (*.validation.ts)
+  env.ts              Fail-fast environment variable validation
+  proxy.ts            Next.js request proxy (optimistic route guard)
+@types/               Ambient declarations, module augmentation
 ```
 
-### 1. Serviço (`src/services/[domain].ts`)
+## Layering
 
-Responsável APENAS por chamadas HTTP.
-
-```typescript
-export const noteService = {
-  list: async (): Promise<TNote[]> => {
-    const { data } = await api.get<TNote[]>('notes');
-    return data;
-  },
-  create: async (payload: TCreateNotePayload): Promise<TNote> => {
-    const { data } = await api.post<TNote>('notes', payload);
-    return data;
-  },
-};
-```
-
-- Objeto com métodos assíncronos
-- Tipagem estrita de entrada/saída
-- Sem estado, sem cache, sem lógica de negócio
-
-### 2. Hooks de API (`src/hooks/api/[domain].ts`)
-
-Abstraem o React Query por completo.
-
-```typescript
-export const useNotes = () => {
-  return useQuery({
-    queryKey: queryKeys.notes.list(),
-    queryFn: noteService.list,
-  });
-};
-
-export const useCreateNote = () => {
-  return useMutation({
-    mutationFn: noteService.create,
-    meta: { invalidateQueries: [queryKeys.notes.all()] },
-  });
-};
-```
-
-- Nenhum componente importa `useQuery`/`useMutation` diretamente
-- As chaves vêm da fábrica tipada `src/constants/queryKeys.ts` — o `Register` do React Query (`src/types/tanStack-query.d.ts`) faz o TypeScript **rejeitar** qualquer chave fora dela. Chave inconsistente é a causa nº 1 de "tela desatualizada"; aqui ela vira erro de compilação.
-- Invalidação declarativa: `meta.invalidateQueries` é processado uma única vez no `MutationCache` (`components/layout/Providers/queryClient.ts`)
-
-### 3. Zustand Store (`src/stores/[domain]Store.ts`)
-
-Gerencia APENAS estado visual (UI state).
-
-```typescript
-export const useNotesStore = create<Store>(set => ({
-  filterOpen: false,
-  setFilterOpen: open => set({ filterOpen: open }),
-}));
-```
-
-- Nunca armazena dados de API (o React Query já faz isso)
-- Estados simples: modais, seleções, filtros, abas ativas
-
-### 4. Componentes (`src/components/pages/[Feature]/`)
-
-Puros, focados em renderização.
-
-```typescript
-const NotesPage = () => {
-  const { data: notes } = useNotes();
-  const { filterOpen, setFilterOpen } = useNotesStore();
-
-  return (
-    <div className="flex flex-col gap-4">
-      <Button text="Filtros" onClick={() => setFilterOpen(!filterOpen)} />
-
-      {filterOpen && <NotesFilters />}
-
-      {notes?.map(note => (
-        <NoteCard key={note.id} note={note} />
-      ))}
-    </div>
-  );
-};
-```
-
-- 30-100 linhas
-- Zero `useState` em cascata
-- Responsabilidade única: renderizar
-
----
-
-## Onde vive cada estado
-
-| Estado                                | Onde                          | Por quê                                                       |
-| ------------------------------------- | ----------------------------- | ------------------------------------------------------------- |
-| Dados vindos da API                   | React Query (via `hooks/api`) | Cache, deduplicação, invalidação e refetch prontos            |
-| UI compartilhada (modal, filtro, aba) | Zustand (`stores/`)           | Simples, sem provider, inspecionável no Redux DevTools        |
-| Campos de formulário                  | React Hook Form + Zod         | Validação tipada e sem re-render a cada tecla                 |
-| Estado local de um componente só      | `useState`                    | Quando ninguém mais precisa dele                              |
-| Sessão (tokens)                       | Cookies (`utils/session.ts`)  | O `proxy.ts` lê no servidor e redireciona antes de renderizar |
-| Dados do usuário logado               | React Query (`useMe`)         | Nunca persistidos no navegador: sempre vêm da API             |
-
----
-
-## Autenticação
+Dependencies point **downward only**. A lower layer must never import from a
+higher one.
 
 ```
-Login ──► authService.login ──► session.start(tokens) ──► router.replace(?redirect ou HOME_ROUTE)
-                                   (cookies)
-
-Request ──► proxy.ts ── sem cookie de sessão em rota privada ──► /login?redirect=<rota>
-                     ── com sessão em /login ─────────────────► HOME_ROUTE
-
-API 401 ──► interceptor ──► refresh (uma chamada, as demais aguardam) ──► repete a request
-                                └── refresh falhou ──► session.end() ──► /login
+app/  →  components/  →  hooks/  →  services/  →  utils/ · types/ · constants/
+                     ↘  store/  ↗
 ```
 
-- **Tokens em cookies** (`utils/cookies.ts` + `utils/session.ts`), com o nome prefixado por `APP_NAME` (cookies de `localhost` são compartilhados entre projetos). "Manter conectado" grava cookies persistentes (30 dias) e guarda o refresh token; sem ele, os cookies são de sessão.
-- **`src/proxy.ts`** faz a checagem _otimista_: só confere se o cookie existe. Quem valida o token é a API.
-- **`src/services/api.ts`** injeta o `Authorization`, faz o refresh com fila única (várias requests com 401 disparam um refresh só) e encerra a sessão se o refresh falhar.
-- **Logout** (`session.end`) usa navegação completa: zera de uma vez o cache do React Query, as stores do Zustand e o Router Cache do Next.
-- Rotas públicas ficam em `src/constants/routes.ts` (`PUBLIC_ROUTES`); tudo fora delas exige sessão.
-- **Contrato com o backend:** `services/auth.ts` espera `POST auth/login → { accessToken, refreshToken? }` e `POST auth/refresh`; `services/user.ts` espera `GET users/me`. Ajuste ao backend do projeto.
+`import-x/no-cycle` is an ESLint **error**, so a violation fails the lint. The
+common way to create one is a low-level module importing a type from a
+component. If a store needs a type used by a component, the type belongs in the
+store (or `types/`) and the component imports it — not the other way around.
 
-> Os tokens ficam legíveis por JavaScript (assim como no `localStorage`). Se o backend puder emitir cookies `HttpOnly`, prefira: o `proxy.ts` continua igual e o `session.ts` deixa de gravar tokens.
+## Data flow
 
----
-
-## Rotas e páginas
-
-- `src/app/(auth)/` — área logada; o `layout.tsx` do grupo renderiza o `AppHeader`.
-- **Cada `page.tsx` da área logada envolve a feature em `<ClientOnly>`.** Os dados vêm do React Query no cliente e o Next hidrata o layout antes da página: se o header já tiver buscado a mesma query (ex.: `useMe`), a página hidrataria com dados que o HTML do servidor não tinha (hydration mismatch). Com o `ClientOnly`, a página só monta depois da hidratação.
-- O `ClientOnly` fica **na página, nunca no layout**: no layout ele tira o segmento da página do HTML do servidor e a validação de navegação instantânea do Next 16.4 passa a acusar "dropped from rendering" em toda página.
-- Se uma página precisar de SSR de verdade, busque os dados no servidor (prefetch + `HydrationBoundary`) e dispense o `ClientOnly`.
-- `src/app/login/` — rota pública.
-- `app/**/page.tsx` é um **Server Component fino**: exporta `metadata` e renderiza o componente da feature (`components/pages/[Feature]`), que é Client Component quando usa hooks.
-- **Cache Components + Partial Prefetching** (`cacheComponents` e `partialPrefetching: true`, o recomendado pelo Next 16.4 para projetos novos) estão ligados: os links pré-carregam um App Shell estático por rota. O padrão do projeto continua sendo buscar dados no cliente com React Query; se for buscar dados em Server Components, use `'use cache'` ou envolva em `<Suspense>` — leia `node_modules/next/dist/docs/01-app/01-getting-started/` (Caching) antes.
-- **Typed routes** (`typedRoutes: true`): `<Link href>` e `router.push` só aceitam rotas que existem. Strings montadas em runtime precisam de `as Route`.
-
----
-
-## Estilização: TailwindCSS v4
-
-```typescript
-// ❌ Runtime CSS-in-JS (styled-components)
-const Container = styled.div`
-  display: flex;
-`;
-
-// ✅ Golden Standard
-<div className="flex gap-4">...</div>;
+```
+Screen → hooks/api/useThing → services/api/thing → services/http (axios)
 ```
 
-- CSS gerado em build time, arquivo único, nada processado no navegador
-- Tokens em `src/styles/global.css` (`@theme`) — ver `design_tokens.md`
+- `services/api/*` are plain async functions. No React, no hooks.
+- `hooks/api/*` wrap them in `useQuery` / `useMutation`.
+- Screens only ever touch `hooks/api/*`, never `services/` directly.
 
----
+## Components
 
-## Benefícios
+Three buckets. Which one a component belongs to follows from a single rule:
 
-- **Performance:** zero runtime CSS-in-JS, React Compiler memoizando automaticamente
-- **Manutenibilidade:** componentes pequenos e focados
-- **Testabilidade:** lógica desacoplada da renderização
-- **Cache previsível:** chaves tipadas e invalidação centralizada
-- **Escalabilidade:** o mesmo padrão em todas as features
+> **A component lives at the lowest common ancestor of its consumers.**
+
+| Consumers                           | Lives in                              |
+| ----------------------------------- | ------------------------------------- |
+| One parent component                | Nested inside that parent's folder    |
+| Two siblings inside the same screen | Hoisted to their shared parent folder |
+| More than one screen                | `components/ui/`                      |
+
+`ui/` is not a special category — it is the root of that tree, the common
+ancestor of everything. When a component in `screens/` gains a consumer in
+another screen, it moves to `ui/`.
+
+`layout/` is the exception to the rule: it holds app chrome — the shell around
+screens rather than content inside them (`AppHeader`, `ClientOnly`, `Providers`).
+
+### Why `screens/` exists
+
+`src/app/` is reserved strictly for Next.js routing files (`page.tsx`,
+`layout.tsx`, `error.tsx`, `not-found.tsx`), route metadata, and server-level
+wrappers like `<ClientOnly>`.
+
+Keeping screen implementations and screen-local subcomponents in
+`src/components/screens/` keeps `app/` declarative, preserves structural parity
+with the mobile boilerplate, and cleanly separates Server Component route files
+from interactive `'use client'` screen trees.
+
+`screens/` mirrors `app/` **literally** (without route-group parentheses):
+route `app/(main)/home/page.tsx` maps to `components/screens/main/home`.
+
+### Barrels
+
+`ui/`, `layout/`, and `hooks/common/` each export through an `index.ts`, so
+consumers import from `@/components/ui`, `@/components/layout`, and
+`@/hooks/common`.
+
+`screens/` has **no barrel**. Its components are single-use; a barrel there
+would only couple screens to each other.
+
+Between siblings, import relatively (`../ComponentX`). Crossing into another
+bucket, use `@/components/ui`. The lint rule that blocks `../../../` doubles as
+a depth alarm: needing three levels up usually means the component should
+already have been hoisted.
+
+## Where to add things
+
+| Adding                                     | Goes in                                                       |
+| ------------------------------------------ | ------------------------------------------------------------- |
+| A route                                    | `src/app/(auth)/` or `src/app/(main)/`, as `name/page.tsx`    |
+| A component used by several screens        | `src/components/ui/Name/index.tsx` + export in `index.ts`     |
+| App chrome (header, shell, wrapper)        | `src/components/layout/Name/index.tsx` + export in `index.ts` |
+| A component used by one screen only        | `src/components/screens/<mirror of the route>/Name/index.tsx` |
+| A sub-component used by one component only | Nested: `Parent/Child/index.tsx`                              |
+| An endpoint                                | Function in `services/api/`, hook in `hooks/api/`             |
+| A reusable hook                            | `hooks/common/`, exported through `hooks/common/index.ts`     |
+| Global client state                        | `store/` (Zustand)                                            |
+| A pure helper                              | `utils/`                                                      |
+| A form schema                              | `validation/name.validation.ts`                               |
+| A domain type                              | `types/`                                                      |
+| An SVG icon                                | `assets/icons/Name.svg` + export in `assets/icons/index.ts`   |
+
+## Query keys
+
+All keys live in `src/constants/queryKeys.ts` and are type-checked through
+module augmentation in `@types/tanStack-query.d.ts`. Never inline a query key
+string.
+
+Mutations can declare `meta.invalidateQueries` — the `MutationCache` in
+`services/queryClient.ts` invalidates matching queries automatically on success,
+and `onError` surfaces API errors through `DefaultModal` unless
+`meta.suppressErrorModal` is `true`.
+
+## Providers
+
+`app/layout.tsx` wraps `{children}` in `<Providers>` (`components/layout/Providers`),
+which mounts:
+
+```
+QueryClientProvider → AuthProvider → {children} + DefaultModal
+```
+
+`getQueryClient()` in `services/queryClient.ts` creates a fresh `QueryClient`
+per server request (avoiding cross-request cache leakage during SSR) and reuses
+a module singleton in the browser. Never instantiate `new QueryClient()` directly
+inside a component render body.

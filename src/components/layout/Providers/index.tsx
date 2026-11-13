@@ -5,11 +5,10 @@ import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 import { setDefaultOptions } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import { PropsWithChildren } from 'react';
-import { ToastContainer } from 'react-toastify';
 
-import DefaultModal from '@/components/ui/DefaultModal';
-
-import { getQueryClient } from './queryClient';
+import { DefaultModal } from '@/components/ui';
+import { AuthProvider } from '@/contexts/AuthContext';
+import { getQueryClient } from '@/services/queryClient';
 
 setDefaultOptions({ locale: ptBR });
 
@@ -18,11 +17,11 @@ const Providers = ({ children }: PropsWithChildren) => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {children}
+      <AuthProvider>
+        {children}
 
-      <DefaultModal />
-
-      <ToastContainer />
+        <DefaultModal />
+      </AuthProvider>
 
       <ReactQueryDevtools />
     </QueryClientProvider>

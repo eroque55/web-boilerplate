@@ -1,6 +1,5 @@
 import type { NextConfig } from 'next';
 
-// Importar o env aqui valida as variáveis já no `next dev`/`next build`.
 import { env } from './src/env';
 
 const SECURITY_HEADERS = [
@@ -17,12 +16,18 @@ const nextConfig: NextConfig = {
   allowedDevOrigins: env.LOCAL_IP ? [env.LOCAL_IP] : undefined,
   cacheComponents: true,
   partialPrefetching: true,
-  images: {
-    formats: ['image/avif', 'image/webp'],
-  },
   poweredByHeader: false,
   reactCompiler: true,
   typedRoutes: true,
+  images: {
+    formats: ['image/avif', 'image/webp'],
+  },
+  logging: {
+    browserToTerminal: 'warn',
+    fetches: {
+      fullUrl: true,
+    },
+  },
   turbopack: {
     rules: {
       '*.svg': {

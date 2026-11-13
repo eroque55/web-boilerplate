@@ -3,8 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import Button from '@/components/ui/Button';
-import Icon from '@/components/ui/Icon';
+import { Button, Icon } from '@/components/ui';
 
 type Props = {
   error: unknown;
@@ -20,12 +19,14 @@ const ErrorPage = ({ error, retry }: Props) => {
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-4 text-center">
-      <Icon className="text-gray-500" name="WarningTriangleIcon" size={40} />
+      <Icon className="text-neutral-400" name="WarningTriangleIcon" size={40} />
 
       <div className="flex flex-col gap-1">
-        <p className="text-base font-semibold">Algo deu errado.</p>
+        <p className="text-base font-semibold text-neutral-900 dark:text-neutral-100">
+          Algo deu errado.
+        </p>
 
-        <p className="text-sm text-gray-500">
+        <p className="text-sm text-neutral-500 dark:text-neutral-400">
           Não foi possível carregar esta página. Tente novamente.
         </p>
       </div>
@@ -33,9 +34,8 @@ const ErrorPage = ({ error, retry }: Props) => {
       <div className="flex items-center gap-3">
         <Button
           withoutDelay
-          className="border border-gray-200"
-          color="white"
           text="Voltar"
+          variant="neutral"
           onClick={() => router.back()}
         />
 

@@ -8,8 +8,6 @@ import {
 } from '@/constants/routes';
 import { STORAGE_KEYS } from '@/constants/storageKeys';
 
-// Checagem otimista: só confere se os cookies de sessão existem. A validade do
-// token quem decide é a API (401 → refresh → logout em src/services/api.ts).
 export const proxy: NextProxy = request => {
   const { pathname, search } = request.nextUrl;
   const hasSession =
@@ -22,7 +20,11 @@ export const proxy: NextProxy = request => {
 
   if (!hasSession && !PUBLIC_ROUTES.includes(pathname)) {
     const loginUrl = new URL(LOGIN_ROUTE, request.url);
-    loginUrl.searchParams.set('redirect', `${pathname}${search}`);
+
+    if (pathname !== '/') {
+      loginUrl.searchParams.set('redirect', `${pathname}${search}`);
+    }
+
     return NextResponse.redirect(loginUrl);
   }
 

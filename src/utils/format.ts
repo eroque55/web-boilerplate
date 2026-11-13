@@ -1,39 +1,48 @@
-import { format, formatDistanceToNow, isValid, parseISO } from 'date-fns';
-
-// parseISO trata 'yyyy-MM-dd' como horário local; `new Date('2026-10-27')`
-// seria meia-noite UTC e mostraria o dia anterior no Brasil.
-const toDate = (date: Date | string) =>
-  typeof date === 'string' ? parseISO(date) : date;
-
-export const formatCurrency = (value = 0) => {
+export const formatCurrency = (value: number) => {
   return value.toLocaleString('pt-BR', {
     style: 'currency',
     currency: 'BRL',
   });
 };
 
-export const formatDate = (date: Date | string, pattern = 'dd/MM/yyyy') => {
-  const parsedDate = toDate(date);
-  return isValid(parsedDate) ? format(parsedDate, pattern) : '-';
+export const normalize = (value: string) => {
+  return value.replace(/\D/g, '');
 };
 
-export const formatRelativeDate = (date: Date | string) => {
-  const parsedDate = toDate(date);
-  return isValid(parsedDate)
-    ? formatDistanceToNow(parsedDate, { addSuffix: true })
-    : '';
+export const formatDateToEnUs = (date: string) => {
+  const [day, month, year] = date.split('/');
+
+  return `${year}-${month}-${day}`;
 };
 
-export const getNameInitials = (name?: string) => {
-  if (!name) {
+export const formatDateToPtBr = (date?: string) => {
+  if (!date) {
     return '';
   }
 
-  const parts = name.trim().split(/\s+/);
+  const [year, month, day] = date.split('-');
 
-  if (parts.length === 1) {
-    return parts[0].slice(0, 2).toUpperCase();
+  return `${day}/${month}/${year}`;
+};
+
+export const cleanMessage = (message?: string) => {
+  if (!message) {
+    return '';
   }
 
-  return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase();
+  return message.replace(/\s+$/g, '').replace(/\n{3,}/g, '\n\n');
+};
+
+export const normalizeSearch = (value: string) => {
+  return value
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '');
+};
+
+export const matchText = (text: string, search: string) => {
+  const normalizedText = normalizeSearch(text);
+  const normalizedSearch = normalizeSearch(search);
+
+  return normalizedText.includes(normalizedSearch);
 };

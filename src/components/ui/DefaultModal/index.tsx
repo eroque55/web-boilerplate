@@ -1,21 +1,21 @@
 'use client';
 
-import { useDefaultModalStore } from '@/stores/defaultModalStore';
+import { useDefaultModal } from '@/store/defaultModalStore';
 
 import Button from '../Button';
 import Icon from '../Icon';
 import ModalBackdrop from '../ModalBackdrop';
 
-import { MODAL_MAP } from './constants';
+import { MODAL_VARIANTS } from './constants';
 
 const DefaultModal = () => {
-  const { modal, openModal, closeModal } = useDefaultModalStore();
+  const { modal, openModal, closeModal } = useDefaultModal();
 
   if (!modal) {
     return null;
   }
 
-  const variant = MODAL_MAP[modal.type];
+  const variant = MODAL_VARIANTS[modal.type ?? 'default'];
 
   const handleConfirm = async () => {
     if (modal.onConfirm) {
@@ -46,50 +46,45 @@ const DefaultModal = () => {
       <div
         aria-labelledby="default-modal-title"
         aria-modal="true"
-        className="flex w-110 max-w-full flex-col items-center gap-5 rounded-2xl bg-white p-7 shadow-2xl"
+        className="flex w-full max-w-md flex-col items-center gap-5 rounded-2xl border border-neutral-200 bg-white p-6
+          shadow-2xl dark:border-neutral-800 dark:bg-neutral-900"
         role="dialog"
       >
-        <div
-          className="rounded-full p-4"
-          style={{ backgroundColor: variant.bgColor }}
-        >
-          <Icon color={variant.color} name={variant.name} />
+        <div className={`rounded-full p-3.5 ${variant.badgeClassName}`}>
+          <Icon color={variant.iconColor} name={variant.icon} />
         </div>
 
-        <div className="flex w-full flex-col items-center gap-2">
+        <div className="flex w-full flex-col items-center gap-2 text-center">
           <h3
-            className="text-center text-lg font-semibold"
+            className="text-lg font-semibold text-neutral-900 dark:text-neutral-100"
             id="default-modal-title"
           >
             {modal.title}
           </h3>
 
-          <p className="w-full text-center text-sm text-gray-700">
+          <p className="text-sm text-neutral-600 dark:text-neutral-300">
             {modal.message}
           </p>
 
           {modal.notice && (
-            <p className="w-full text-center text-xs text-gray-400">
-              {modal.notice}
-            </p>
+            <p className="text-xs text-neutral-400">{modal.notice}</p>
           )}
         </div>
 
-        <div className="flex w-full items-center justify-center gap-2">
+        <div className="flex w-full items-center gap-2.5">
           {modal.cancelText && (
             <Button
-              className="flex-1 border border-gray-200"
-              color="white"
+              className="flex-1"
               text={modal.cancelText}
-              textColor="text-gray-700"
+              variant="neutral"
               onClick={handleCancel}
             />
           )}
 
           <Button
             className="flex-1"
-            color={variant.buttonColor}
             text={modal.confirmText}
+            variant={variant.buttonVariant}
             onClick={handleConfirm}
           />
         </div>

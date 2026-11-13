@@ -1,14 +1,13 @@
 import { createEnv } from '@t3-oss/env-nextjs';
 
-// Import relativo (e não `@/`): este arquivo também é carregado pelo next.config.ts.
-import z from './validations/zod';
+import z from './validation/zod';
 
 export const env = createEnv({
   server: {
     LOCAL_IP: z.string().optional(),
   },
   client: {
-    NEXT_PUBLIC_API_URL: z.url(),
+    NEXT_PUBLIC_API_URL: z.url().default('http://localhost:3333'),
   },
   runtimeEnv: {
     LOCAL_IP: process.env.LOCAL_IP,

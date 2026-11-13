@@ -1,6 +1,6 @@
-# Instruções para agentes de IA
+# Instructions for AI Agents
 
-As instruções do projeto (stack, regras estritas e o roteador de documentação) estão em [`.claude/CLAUDE.md`](./.claude/CLAUDE.md). Leia esse arquivo antes de qualquer tarefa.
+Project instructions (stack, strict rules, and the documentation router) live in [`CLAUDE.md`](./CLAUDE.md). Read that file before acting on any task.
 
 <!-- BEGIN:nextjs-agent-rules -->
 

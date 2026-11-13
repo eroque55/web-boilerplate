@@ -1,37 +1,35 @@
-export type TButtonColor =
-  | 'primary'
-  | 'primary-soft'
-  | 'white'
-  | 'ink'
-  | 'gray-50'
-  | 'transparent'
-  | 'green'
-  | 'yellow'
-  | 'red';
+export type ButtonVariant =
+  'primary' | 'neutral' | 'danger' | 'success' | 'transparent';
 
-export const BUTTON_MAP: Record<
-  TButtonColor,
-  { bg: string; hover: string; text: string }
+export const BUTTON_VARIANTS: Record<
+  ButtonVariant,
+  { solid: string; wired: string }
 > = {
   primary: {
-    bg: 'bg-primary',
-    hover: 'hover:bg-primary-deep',
-    text: 'text-white',
+    solid: 'border-transparent bg-primary text-white hover:bg-primary-hover',
+    wired:
+      'border-primary bg-transparent text-primary hover:bg-primary/10 dark:hover:bg-primary/20',
   },
-  'primary-soft': {
-    bg: 'bg-primary-soft',
-    hover: 'hover:bg-primary-soft2',
-    text: 'text-primary-deep',
+  neutral: {
+    solid:
+      'border-neutral-200 bg-white text-neutral-700 hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700',
+    wired:
+      'border-neutral-300 bg-transparent text-neutral-700 hover:bg-neutral-100 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800',
   },
-  white: { bg: 'bg-white', hover: 'hover:bg-gray-50', text: 'text-ink' },
-  ink: { bg: 'bg-ink', hover: 'hover:bg-ink2', text: 'text-white' },
-  'gray-50': { bg: 'bg-gray-50', hover: 'hover:bg-gray-100', text: 'text-ink' },
+  danger: {
+    solid: 'border-transparent bg-alert-error text-white hover:brightness-95',
+    wired:
+      'border-alert-error bg-transparent text-alert-error hover:bg-alert-error/10',
+  },
+  success: {
+    solid: 'border-transparent bg-alert-success text-white hover:brightness-95',
+    wired:
+      'border-alert-success bg-transparent text-alert-success hover:bg-alert-success/10',
+  },
   transparent: {
-    bg: 'bg-transparent',
-    hover: 'hover:bg-gray-100',
-    text: 'text-ink',
+    solid:
+      'border-transparent bg-transparent text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800',
+    wired:
+      'border-transparent bg-transparent text-neutral-700 hover:bg-neutral-100 dark:text-neutral-200 dark:hover:bg-neutral-800',
   },
-  green: { bg: 'bg-green', hover: 'hover:brightness-95', text: 'text-white' },
-  yellow: { bg: 'bg-yellow', hover: 'hover:brightness-95', text: 'text-white' },
-  red: { bg: 'bg-red', hover: 'hover:brightness-95', text: 'text-white' },
 };

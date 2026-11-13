@@ -10,7 +10,7 @@ export const maskCPF = (value: string) =>
     .replace(/(\d{3})(\d)/, '$1.$2')
     .replace(/(\d{3})(\d{1,2})$/, '$1-$2');
 
-// Aceita o CNPJ alfanumérico (letras nas 12 primeiras posições), vigente desde jul/2026.
+// Supports alphanumeric CNPJ (letters allowed in the first 12 positions).
 export const maskCNPJ = (value: string) =>
   unMaskAlphanumeric(value)
     .slice(0, 14)

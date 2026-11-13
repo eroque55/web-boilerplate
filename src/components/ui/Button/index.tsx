@@ -1,39 +1,34 @@
+'use client';
+
 import { ButtonHTMLAttributes, MouseEvent } from 'react';
 
-import Icon, { TIconProps } from '@/components/ui/Icon';
-import Spinner from '@/components/ui/Spinner';
-import { useDisableDelay } from '@/hooks/useDisableDelay';
+import { useDisableDelay } from '@/hooks/common';
 import { cn } from '@/utils/cn';
 
-import { BUTTON_MAP, TButtonColor } from './constants';
+import Icon, { IconProps } from '../Icon';
+import Spinner from '../Spinner';
+
+import { BUTTON_VARIANTS, ButtonVariant } from './constants';
 
 type Props = {
   text: string;
-  color?: TButtonColor;
-  textColor?: string;
-  textClassName?: string;
-  leftIcon?: TIconProps;
-  rightIcon?: TIconProps;
-  lift?: boolean;
-  showHover?: boolean;
+  variant?: ButtonVariant;
+  wired?: boolean;
+  leftIcon?: IconProps;
+  rightIcon?: IconProps;
   withoutDelay?: boolean;
   isLoading?: boolean;
-  showLoadingIndicator?: boolean;
   onClick?: (e: MouseEvent<HTMLButtonElement>) => void | Promise<void>;
-} & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'color' | 'onClick'>;
+} & Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'onClick'>;
 
 const Button = ({
   text,
-  color = 'primary',
-  textColor,
-  textClassName = 'text-sm font-medium',
+  variant = 'primary',
+  wired = false,
   leftIcon,
   rightIcon,
-  lift = false,
-  showHover = true,
   withoutDelay = false,
   isLoading = false,
-  showLoadingIndicator = false,
   className,
   type = 'button',
   disabled,
@@ -42,14 +37,11 @@ const Button = ({
 }: Props) => {
   const { executeWithDelay, isLoading: isDelaying } = useDisableDelay();
 
-  const variant = BUTTON_MAP[color];
-  const isBusy = isLoading || isDelaying;
-  const showSpinner = isBusy && showLoadingIndicator;
-
-  const renderIcon = (icon: TIconProps) => <Icon size={16} {...icon} />;
+  const styles = BUTTON_VARIANTS[variant];
+  const showSpinner = isLoading || isDelaying;
 
   const handleClick = async (e: MouseEvent<HTMLButtonElement>) => {
-    if (!onClick) {
+    if (!onClick || showSpinner) {
       return;
     }
 
@@ -64,25 +56,27 @@ const Button = ({
   return (
     <button
       className={cn(
-        'flex items-center justify-center gap-2 rounded-xl px-4 py-3 transition disabled:cursor-default',
-        disabled
-          ? 'bg-gray-200 text-gray-400'
-          : [variant.bg, textColor ?? variant.text],
-        !disabled && showHover && variant.hover,
-        !disabled && lift && 'hover:-translate-y-0.5 hover:shadow-primary',
-        isBusy && 'opacity-75',
+        `flex items-center justify-center gap-2 rounded-xl border px-4 py-3 text-sm font-medium transition
+        disabled:cursor-default disabled:opacity-60`,
+        wired ? styles.wired : styles.solid,
         className,
       )}
-      disabled={disabled || isBusy}
+      disabled={disabled || isLoading}
       type={type}
       onClick={handleClick}
       {...props}
     >
-      {showSpinner ? <Spinner size={16} /> : leftIcon && renderIcon(leftIcon)}
+      {leftIcon && <Icon size={16} {...leftIcon} />}
 
-      <span className={textClassName}>{text}</span>
+      <span>{text}</span>
 
-      {rightIcon && renderIcon(rightIcon)}
+      {showSpinner ? (
+        <span data-testid="button-activity-indicator">
+          <Spinner size={16} />
+        </span>
+      ) : (
+        rightIcon && <Icon size={16} {...rightIcon} />
+      )}
     </button>
   );
 };

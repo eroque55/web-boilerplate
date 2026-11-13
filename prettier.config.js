@@ -8,7 +8,7 @@ module.exports = {
     require.resolve('prettier-plugin-classnames'),
     require.resolve('prettier-plugin-merge'),
   ],
-  tailwindStylesheet: './src/styles/global.css',
+  tailwindStylesheet: './src/theme/global.css',
   tailwindAttributes: ['className'],
   tailwindFunctions: ['cn'],
   customFunctions: ['cn'],

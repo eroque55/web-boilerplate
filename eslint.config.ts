@@ -2,12 +2,14 @@ import * as compat from '@eslint/compat';
 import js from '@eslint/js';
 import nextPlugin from '@next/eslint-plugin-next';
 import pluginQuery from '@tanstack/eslint-plugin-query';
+import vitest from '@vitest/eslint-plugin';
 import eslintConfigPrettier from 'eslint-config-prettier/flat';
 import { importX } from 'eslint-plugin-import-x';
 import preferArrowFunctions from 'eslint-plugin-prefer-arrow-functions';
 import eslintPluginPrettierRecommended from 'eslint-plugin-prettier/recommended';
 import reactPlugin from 'eslint-plugin-react';
 import reactHooks from 'eslint-plugin-react-hooks';
+import testingLibrary from 'eslint-plugin-testing-library';
 import { defineConfig, globalIgnores } from 'eslint/config';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
@@ -26,7 +28,7 @@ export default defineConfig([
   eslintPluginPrettierRecommended,
   eslintConfigPrettier,
   pluginQuery.configs['flat/recommended-strict'],
-  nextPlugin.configs.recommended,
+  nextPlugin.configs['core-web-vitals'],
   compat.fixupConfigRules(reactPlugin.configs.flat.recommended),
   reactHooks.configs.flat.recommended,
   importX.flatConfigs.recommended,
@@ -43,12 +45,16 @@ export default defineConfig([
       globals: {
         ...globals.node,
         ...globals.browser,
-        __DEV__: 'readonly',
       },
+      parser: tseslint.parser,
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module',
         ecmaFeatures: { jsx: true },
+        projectService: {
+          allowDefaultProject: ['*.js', '*.cjs', '*.mjs'],
+        },
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     settings: {
@@ -84,6 +90,11 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'warn',
       '@typescript-eslint/no-var-requires': 'error',
       '@typescript-eslint/consistent-type-definitions': ['error', 'type'],
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/no-misused-promises': [
+        'error',
+        { checksVoidReturn: { attributes: false } },
+      ],
 
       // react
       'react/jsx-filename-extension': [1, { extensions: ['.tsx'] }],
@@ -111,12 +122,7 @@ export default defineConfig([
           allowAsProps: true,
         },
       ],
-      'react/style-prop-object': [
-        'error',
-        {
-          allow: ['StatusBar'],
-        },
-      ],
+      'react/style-prop-object': 'error',
       'react/prop-types': 'off',
       'react/react-in-jsx-scope': 'off',
       'react/jsx-uses-react': 'off',
@@ -127,11 +133,11 @@ export default defineConfig([
         { props: 'never', children: 'never' },
       ],
 
-      // React Hooks
-      'react-hooks/exhaustive-deps': 'off',
-      'react-hooks/set-state-in-effect': 'off',
-      'react-hooks/refs': 'off',
-      'react-hooks/immutability': 'off',
+      // React Hooks & React Compiler
+      'react-hooks/exhaustive-deps': 'warn',
+      'react-hooks/set-state-in-effect': 'warn',
+      'react-hooks/refs': 'warn',
+      'react-hooks/immutability': 'warn',
 
       // TanStack Query
       '@tanstack/query/prefer-query-options': 'off',
@@ -152,6 +158,7 @@ export default defineConfig([
 
       // import-x
       'import-x/namespace': 'off',
+      'import-x/no-cycle': 'error',
       'import-x/no-dynamic-require': 'warn',
       'import-x/no-nodejs-modules': 'warn',
       'import-x/extensions': [
@@ -176,10 +183,6 @@ export default defineConfig([
           pathGroups: [
             {
               pattern: '@/**',
-              group: 'internal',
-            },
-            {
-              pattern: '@public/**',
               group: 'internal',
             },
           ],
@@ -215,18 +218,24 @@ export default defineConfig([
       'no-await-in-loop': 'warn',
       'require-await': 'error',
 
-      // custom
+      // Custom boundaries
       'no-restricted-imports': [
         'error',
         {
           paths: [
             {
-              name: 'zod',
-              message: 'Please import from @/validations/zod instead',
+              name: 'next/image',
+              message: 'Please import Image from @/components/ui instead',
             },
             {
-              name: 'yup',
-              message: 'Please import from @/validations/zod instead',
+              name: 'zod',
+              message: 'Please import from @/validation/zod instead',
+            },
+            {
+              name: '@testing-library/react',
+              importNames: ['render'],
+              message:
+                'Please import render or renderWithProviders from @/test/utils instead',
             },
           ],
           patterns: [
@@ -239,6 +248,34 @@ export default defineConfig([
         },
       ],
     },
+  },
+  {
+    files: ['**/*.test.{ts,tsx}'],
+    ...vitest.configs.recommended,
+    ...testingLibrary.configs['flat/react'],
+    plugins: {
+      ...vitest.configs.recommended.plugins,
+      ...testingLibrary.configs['flat/react'].plugins,
+    },
+    rules: {
+      ...vitest.configs.recommended.rules,
+      ...testingLibrary.configs['flat/react'].rules,
+      'vitest/no-disabled-tests': 'warn',
+      'vitest/no-focused-tests': 'error',
+      'vitest/no-identical-title': 'error',
+      'vitest/prefer-to-have-length': 'warn',
+      'vitest/valid-expect': 'error',
+    },
+  },
+  {
+    files: ['src/test/**'],
+    rules: {
+      'no-restricted-imports': 'off',
+    },
+  },
+  {
+    files: ['**/*.{js,cjs,mjs}'],
+    ...tseslint.configs.disableTypeChecked,
   },
   {
     files: ['**/*.config.*'],

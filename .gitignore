@@ -1,5 +1,3 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
 # dependencies
 /node_modules
 /.pnp
@@ -29,8 +27,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
+*.log
 
-# env files (can opt-in for committing if needed)
+# env files
 .env*
 !.env.example
 
@@ -41,10 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# AI Agent memory folder
+# local agent files
 .antigravity/
 /.superpowers
 /.tmp
-
-# local Claude Code config (secrets, not for version control)
 .claude/*.local.json
+CLAUDE.local.md

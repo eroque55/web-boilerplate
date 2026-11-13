@@ -1,5 +1,4 @@
-type TCookieOptions = {
-  // Sem maxAge o cookie é de sessão: some quando o navegador fecha.
+type CookieOptions = {
   maxAge?: number;
 };
 
@@ -18,7 +17,7 @@ export const getCookie = (name: string) => {
 export const setCookie = (
   name: string,
   value: string,
-  { maxAge }: TCookieOptions = {},
+  { maxAge }: CookieOptions = {},
 ) => {
   const attributes = ['path=/', 'samesite=lax'];
 
@@ -34,5 +33,9 @@ export const setCookie = (
 };
 
 export const removeCookie = (name: string) => {
+  if (typeof document === 'undefined') {
+    return;
+  }
+
   document.cookie = `${name}=; path=/; max-age=0`;
 };

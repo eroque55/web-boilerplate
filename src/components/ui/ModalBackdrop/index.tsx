@@ -1,23 +1,24 @@
 'use client';
 
-import { MouseEvent, PropsWithChildren, useEffect, useState } from 'react';
+import { MouseEvent, PropsWithChildren, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 
-import { useModalEscapeAndScrollLock } from '@/hooks/useModalEscapeAndScrollLock';
+import { useModalEscapeAndScrollLock } from '@/hooks/common';
 
 type Props = {
   onClose?: () => void;
 };
 
-// Sem `onClose` o modal não fecha por clique fora nem por Esc.
+const subscribe = () => () => {};
+
 const ModalBackdrop = ({ onClose, children }: PropsWithChildren<Props>) => {
-  const [mounted, setMounted] = useState(false);
+  const isMounted = useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
 
-  useModalEscapeAndScrollLock(true, onClose);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  useModalEscapeAndScrollLock(isMounted, onClose);
 
   const handleClickOutside = (e: MouseEvent<HTMLDivElement>) => {
     if (onClose && e.target === e.currentTarget) {
@@ -25,13 +26,13 @@ const ModalBackdrop = ({ onClose, children }: PropsWithChildren<Props>) => {
     }
   };
 
-  if (!mounted) {
+  if (!isMounted) {
     return null;
   }
 
   return createPortal(
     <div
-      className="fixed inset-0 z-100 flex animate-fade-in items-center justify-center bg-black/20 p-4 backdrop-blur-xs"
+      className="fixed inset-0 z-100 flex animate-fade-in items-center justify-center bg-black/40 p-4 backdrop-blur-xs"
       onClick={handleClickOutside}
     >
       {children}

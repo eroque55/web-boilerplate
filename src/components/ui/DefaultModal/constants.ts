@@ -1,29 +1,34 @@
-import { ModalType } from '@/stores/defaultModalStore';
-import { colors } from '@/styles/theme';
+import { ModalType } from '@/store/defaultModalStore';
+import { colors } from '@/theme/colors';
 
-import { TButtonColor } from '../Button/constants';
+import { ButtonVariant } from '../Button/constants';
 import { TIcon } from '../Icon';
 
-export const MODAL_MAP: Record<
+export const MODAL_VARIANTS: Record<
   ModalType,
-  { name: TIcon; color: string; bgColor: string; buttonColor: TButtonColor }
+  {
+    icon: TIcon;
+    iconColor: string;
+    badgeClassName: string;
+    buttonVariant: ButtonVariant;
+  }
 > = {
   default: {
-    name: 'WarningCircleIcon',
-    color: colors.primary,
-    bgColor: colors.primarySoft,
-    buttonColor: 'primary',
+    icon: 'WarningCircleIcon',
+    iconColor: colors.primary,
+    badgeClassName: 'bg-primary/10 dark:bg-primary/20',
+    buttonVariant: 'primary',
   },
   success: {
-    name: 'CheckCircleIcon',
-    color: colors.green,
-    bgColor: colors.greenSoft,
-    buttonColor: 'green',
+    icon: 'CheckCircleIcon',
+    iconColor: colors.alert.success,
+    badgeClassName: 'bg-alert-success/10 dark:bg-alert-success/20',
+    buttonVariant: 'success',
   },
   error: {
-    name: 'WarningTriangleIcon',
-    color: colors.red,
-    bgColor: colors.redSoft,
-    buttonColor: 'red',
+    icon: 'WarningTriangleIcon',
+    iconColor: colors.alert.error,
+    badgeClassName: 'bg-alert-error/10 dark:bg-alert-error/20',
+    buttonVariant: 'danger',
   },
 };

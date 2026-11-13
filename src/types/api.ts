@@ -7,7 +7,7 @@ export type TPagination = {
 
 export type TApiResponse<T> = {
   data: T;
-  meta?: {
+  meta: {
     pagination: TPagination;
   };
 };

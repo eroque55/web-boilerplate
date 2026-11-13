@@ -1,96 +1,169 @@
-# web-boilerplate
+# Next.js Boilerplate
 
-Ponto de partida para projetos web em **Next.js**, com a arquitetura, o lint e os componentes base do `estuda-web-aluno` e o tooling atual do mercado.
+An opinionated Next.js web template with batteries included: authentication flow
+with deduplicated token refresh, optimistic route guards, dark mode without FOUC,
+a complete UI kit, testing set up, and linting that enforces conventions instead
+of just documenting them.
 
-## O que vem pronto
+## Stack
 
-| Área         | O quê                                                                                                                  |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------- |
-| Framework    | Next.js 16.4 (App Router, Turbopack, Cache Components + Partial Prefetching, typed routes), React 19.3, React Compiler |
-| Linguagem    | TypeScript 6.0 estrito, paths `@/*` e `@public/*`                                                                      |
-| Dados        | TanStack React Query 5 (com Devtools), query keys tipadas, invalidação por `meta`                                      |
-| Estado de UI | Zustand 5                                                                                                              |
-| HTTP         | Axios com token automático e refresh em fila                                                                           |
-| Autenticação | Login, logout, "manter conectado", sessão em cookies e proteção de rotas no `proxy.ts`                                 |
-| Formulários  | React Hook Form + Zod 4 (mensagens em pt-BR), máscaras e validadores BR (CPF, CNPJ alfanumérico, telefone)             |
-| Estilo       | Tailwind CSS v4, tokens em `@theme`, `cn` (clsx + tailwind-merge)                                                      |
-| UI base      | `Button`, `Icon` (SVGR), `TextInput`, `TextArea`, `DefaultModal`, `ModalBackdrop`, `Tooltip`, `Shimmer`, `Spinner`     |
-| Env          | `@t3-oss/env-nextjs`: variáveis validadas no `dev`/`build`                                                             |
-| Qualidade    | ESLint 10 + Prettier 3 (configs do estuda), husky + lint-staged + commitlint                                           |
-| Testes       | Vitest 5 + Testing Library + jsdom                                                                                     |
-| CI/CD        | GitHub Actions (lint, typecheck, testes, build) e Dependabot com cooldown                                              |
-| IA           | `.claude/` com arquitetura, padrões de código e tokens; `AGENTS.md` apontando para os docs do Next instalado           |
+|                                    |                                                                   |
+| ---------------------------------- | ----------------------------------------------------------------- |
+| **Next.js 16.4** · React 19.2      | App Router, Cache Components, Partial Prefetching, React Compiler |
+| **TypeScript 6**                   | Strict mode + typed routes                                        |
+| **Tailwind CSS 4**                 | CSS-first config with the palette shared with JS                  |
+| **TanStack Query 5**               | Server state + typed query keys                                   |
+| **Zustand 5**                      | Client state                                                      |
+| **React Hook Form** + **Zod 4**    | Forms and validation, pt-BR error messages                        |
+| **Axios**                          | HTTP client with automatic 401 refresh deduplication              |
+| **Vitest 5** + **Testing Library** | Unit and component testing                                        |
 
-## Requisitos
+## Get started
 
-- Node.js 24 (`.nvmrc`; mínimo 22.22)
-- Yarn 1.22
+1. Copy the environment template:
 
-## Primeiros passos
+   ```bash
+   cp .env.example .env.local
+   ```
+
+2. Install dependencies:
+
+   ```bash
+   yarn install
+   ```
+
+3. Start the development server:
+
+   ```bash
+   yarn dev
+   ```
+
+   Open [http://localhost:3000](http://localhost:3000). Mocked authentication is
+   enabled out of the box in `src/services/api/auth.ts` so you can sign in
+   immediately and swap in real API endpoints when ready.
+
+## First things to change
+
+1. Replace `changeme` in `package.json` (`name`) and `src/constants/app.ts`
+   (`APP_NAME`, `APP_DESCRIPTION`). Cookie and `localStorage` keys derive from
+   `APP_NAME` automatically via `src/constants/storageKeys.ts`.
+2. Uncomment the real HTTP calls in `src/services/api/auth.ts` and adjust
+   `src/types/user.ts` to match your backend payload.
+
+## Project structure
+
+```
+assets/
+  icons/            SVG icons + typed IconName registry
+src/
+  app/              Routes (Next.js App Router)
+    page.tsx        Root route — a dispatcher, never a screen
+    (auth)/         Unauthenticated routes (/login)
+    (main)/         Authenticated shell + routes (/home)
+  components/
+    ui/             UI kit (Button, Input, Checkbox, Switch, Tab, Shimmer, DefaultModal, …)
+    layout/         App chrome (AppHeader, ClientOnly, Providers)
+    screens/        Screen implementations mirroring src/app/
+  constants/        App metadata, routes, storage keys, typed query keys
+  contexts/         AuthContext
+  hooks/
+    api/            Server calls (React Query)
+    common/         Reusable hooks (useDebounce, useDisableDelay, useTheme, …)
+  services/         Axios HTTP client, API layer, SSR-safe QueryClient
+  store/            Zustand stores (defaultModalStore)
+  test/             Test helpers (renderWithProviders)
+  theme/            colors.ts and global.css
+  types/            Domain and API types
+  utils/            Pure helpers (format, masks, validators, cookies, session, handleError)
+  validation/       Zod pt-BR config and form schemas
+  env.ts            Environment variable validation
+  proxy.ts          Optimistic session route guard
+@types/             Ambient declarations and TanStack Query module augmentation
+```
+
+## What's included
+
+**Authentication** — `AuthContext` + `session.ts` + `services/http.ts` handle
+login, logout, user fetching, and automatic token refresh. Concurrent `401`
+responses share a single in-flight refresh promise so rotating refresh tokens
+never get invalidated by parallel requests.
+
+**Route guards & caching** — `src/proxy.ts` redirects unauthenticated visitors
+away from private routes (preserving `?redirect=…`) and authenticated users away
+from `/login`. Next.js 16.4 `cacheComponents` and `partialPrefetching` keep
+layouts statically prerendered while `<ClientOnly>` cleanly mounts
+session-dependent screens.
+
+**Error handling** — every failed mutation passes through `handleError`, which
+extracts the real message returned by the API (`{ message }`, Strapi's
+`{ error: { message } }`, or plain text) and surfaces it in the global
+`DefaultModal`.
+
+**Theme & Dark Mode** — `src/theme/colors.ts` is the single color source of
+truth, shared between TypeScript and Tailwind CSS 4 via `@config`. A tiny inline
+script in `app/layout.tsx` applies `.dark` before first paint (zero FOUC), paired
+with `useTheme()` (`useSyncExternalStore`).
+
+## Conventions
+
+**Enforced by ESLint** (these fail the lint, they are not suggestions):
+
+- Import `Image` from `@/components/ui`, never from `next/image`
+- Import `z` from `@/validation/zod`, never from `zod` — the local instance is configured with pt-BR messages
+- Import `render` / `renderWithProviders` from `@/test/utils`, never `render` from `@testing-library/react`
+- No relative imports deeper than two levels; use the `@/` alias
+- No circular dependencies (`import-x/no-cycle`)
+- Imports and JSX props are grouped and alphabetized automatically
+
+**By agreement:**
+
+- Code, comments, tests, and docs in English. Portuguese only for strings the user reads.
+- Components live in `Component/index.tsx`, with sub-components in nested folders.
+- Prefer `type` over `interface`.
+
+## Testing
+
+Tests live next to the code they cover: `validators.ts` → `validators.test.ts`,
+`Button/index.tsx` → `Button/index.test.tsx`.
 
 ```bash
-yarn install
-cp .env.example .env.local
-yarn dev
+yarn test              # run once
+yarn test:watch        # watch mode
+yarn test:coverage     # V8 coverage report in coverage/
 ```
 
-Ao iniciar um projeto novo a partir daqui:
+### Writing a component test
 
-1. Troque `changethisname` em `package.json`, `src/constants/app.ts` e `.claude/CLAUDE.md`.
-2. Ajuste `APP_DESCRIPTION` em `src/constants/app.ts`.
-3. Configure `NEXT_PUBLIC_API_URL` no `.env.local` (e as novas variáveis em `src/env.ts`).
-4. Alinhe o contrato de autenticação com o backend em `src/services/auth.ts` e `src/services/user.ts`.
-5. Troque a paleta em `src/styles/global.css` e atualize `.claude/design_tokens.md`.
-6. Troque o `src/app/favicon.ico`.
+Use `renderWithProviders` from `@/test/utils`, which wraps the component in a
+fresh `QueryClientProvider` per test and re-exports everything from Testing
+Library:
 
-## Scripts
+```tsx
+import { vi } from 'vitest';
 
-| Comando             | O que faz                        |
-| ------------------- | -------------------------------- |
-| `yarn dev`          | Dev server em `localhost:3000`   |
-| `yarn build`        | Build de produção                |
-| `yarn start`        | Sobe o build de produção         |
-| `yarn lint`         | ESLint                           |
-| `yarn lint:fix`     | ESLint corrigindo o que der      |
-| `yarn format`       | Prettier em todo o projeto       |
-| `yarn format:check` | Confere a formatação sem alterar |
-| `yarn typecheck`    | `next typegen` + `tsc --noEmit`  |
-| `yarn test`         | Vitest (uma rodada)              |
-| `yarn test:watch`   | Vitest em modo watch             |
-| `yarn analyze`      | Analisa o tamanho dos bundles    |
+import { fireEvent, renderWithProviders, screen } from '@/test/utils';
 
-## Estrutura
+it('calls onClick when clicked', () => {
+  const onClick = vi.fn();
+  renderWithProviders(<Button text="Enviar" onClick={onClick} />);
 
-```
-src/
-├── app/                 # Rotas. (auth)/ = área logada; page.tsx são Server Components finos
-├── components/
-│   ├── layout/          # Providers, AppHeader
-│   ├── pages/           # Telas (Login, Dashboard, NotFound)
-│   └── ui/              # Componentes base
-├── constants/           # app, rotas, query keys, chaves de storage
-├── hooks/               # hooks comuns + hooks/api (React Query)
-├── services/            # HTTP (api.ts com interceptors + um arquivo por domínio)
-├── stores/              # Zustand (só estado de UI)
-├── styles/              # global.css (@theme) e theme.ts
-├── types/               # tipos de domínio + Register do React Query
-├── utils/               # cn, cookies, sessão, toasts, formatação, máscaras, validadores
-├── validations/         # zod configurado + schemas
-├── env.ts               # variáveis de ambiente validadas
-└── proxy.ts             # proteção de rotas (antigo middleware)
-public/svg/              # ícones usados pelo componente Icon
+  fireEvent.click(screen.getByRole('button', { name: 'Enviar' }));
+
+  expect(onClick).toHaveBeenCalledTimes(1);
+});
 ```
 
-## Convenções
+## Useful commands
 
-As regras vivem em `.claude/` e valem para pessoas e para agentes de IA:
+```bash
+yarn dev            # start Next.js dev server
+yarn build          # build for production
+yarn typecheck      # next typegen && tsc --noEmit
+yarn lint           # ESLint (0 warnings)
+yarn lint:fix       # ESLint with --fix
+yarn format         # Prettier over the whole project
+```
 
-- [`architecture.md`](./.claude/architecture.md) — camadas, autenticação, onde vive cada estado
-- [`coding_standards.md`](./.claude/coding_standards.md) — nomenclatura, pastas, API, formulários, componentes, testes
-- [`design_tokens.md`](./.claude/design_tokens.md) — cores, tipografia, sombras
+## Author
 
-Commits seguem [Conventional Commits](https://www.conventionalcommits.org/pt-br/) (`feat(auth): ...`, `fix(ui): ...`): o hook `commit-msg` bloqueia mensagens fora do padrão e o `pre-commit` roda ESLint + Prettier nos arquivos alterados.
-
-## Mantendo atualizado
-
-O Dependabot abre PRs semanais agrupando minor/patch e espera 7 dias após cada release antes de propor a atualização. Para atualizar o Next com ajuda de um agente de IA: `npx next upgrade --agent=latest`.
+Built and maintained by **Eduardo Roque** — [@eroque55](https://github.com/eroque55).

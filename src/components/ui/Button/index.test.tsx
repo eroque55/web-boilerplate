@@ -1,37 +1,75 @@
-import { render, screen } from '@testing-library/react';
-import { userEvent } from '@testing-library/user-event';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import Button from '.';
+import { act, fireEvent, renderWithProviders, screen } from '@/test/utils';
+
+import Button from './index';
 
 describe('Button', () => {
-  it('chama onClick ao clicar', async () => {
-    const onClick = vi.fn();
-    render(<Button text="Salvar" onClick={onClick} />);
-
-    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
-
-    expect(onClick).toHaveBeenCalledOnce();
+  beforeEach(() => {
+    vi.useFakeTimers();
   });
 
-  it('ignora cliques repetidos enquanto a ação anterior está no delay', async () => {
-    const onClick = vi.fn();
-    render(<Button text="Salvar" onClick={onClick} />);
-
-    const button = screen.getByRole('button', { name: 'Salvar' });
-    await userEvent.click(button);
-    await userEvent.click(button);
-
-    expect(onClick).toHaveBeenCalledOnce();
+  afterEach(() => {
+    vi.useRealTimers();
   });
 
-  it('não dispara onClick quando desabilitado', async () => {
+  it('renders the given text', () => {
+    renderWithProviders(<Button text="Entrar" />);
+
+    expect(screen.getByRole('button', { name: 'Entrar' })).toBeInTheDocument();
+  });
+
+  it('calls onClick when clicked', () => {
     const onClick = vi.fn();
-    render(<Button disabled text="Salvar" onClick={onClick} />);
+    renderWithProviders(<Button text="Entrar" onClick={onClick} />);
 
-    await userEvent.click(screen.getByRole('button', { name: 'Salvar' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Entrar' }));
 
-    expect(screen.getByRole('button', { name: 'Salvar' })).toBeDisabled();
-    expect(onClick).not.toHaveBeenCalled();
+    expect(onClick).toHaveBeenCalledTimes(1);
+  });
+
+  it('ignores repeated clicks during the blocking delay and re-enables afterwards', async () => {
+    const onClick = vi.fn();
+    renderWithProviders(<Button text="Entrar" onClick={onClick} />);
+
+    const button = screen.getByRole('button', { name: 'Entrar' });
+
+    fireEvent.click(button);
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    expect(onClick).toHaveBeenCalledTimes(1);
+
+    await act(() => vi.advanceTimersByTimeAsync(1000));
+
+    fireEvent.click(button);
+
+    expect(onClick).toHaveBeenCalledTimes(2);
+  });
+
+  it('allows consecutive clicks when withoutDelay is set', () => {
+    const onClick = vi.fn();
+    renderWithProviders(
+      <Button withoutDelay text="Entrar" onClick={onClick} />,
+    );
+
+    const button = screen.getByRole('button', { name: 'Entrar' });
+
+    fireEvent.click(button);
+    fireEvent.click(button);
+
+    expect(onClick).toHaveBeenCalledTimes(2);
+  });
+
+  it('shows the loading indicator when isLoading', () => {
+    renderWithProviders(<Button isLoading text="Entrar" />);
+
+    expect(screen.getByTestId('button-activity-indicator')).toBeInTheDocument();
+  });
+
+  it('does not show the indicator when not loading', () => {
+    renderWithProviders(<Button text="Entrar" />);
+
+    expect(screen.queryByTestId('button-activity-indicator')).toBeNull();
   });
 });
